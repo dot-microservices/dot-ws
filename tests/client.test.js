@@ -2,8 +2,6 @@
 
 'use strict';
 
-'use strict';
-
 const Client = require('../src/client');
 const Server = require('../src/server');
 
@@ -31,5 +29,5 @@ test('service health', async done => {
             server.shutdown();
             done();
         });
-    }, 1200);
+    }, 1000);
 });
