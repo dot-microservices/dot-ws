@@ -5,7 +5,7 @@ const is = require('is_js');
 const joinPath = require('path').join;
 const portfinder = require('portfinder');
 const readdir = require('fs').readdirSync;
-const registry = require('./registry');
+const ServiceRegistry = require('clerq');
 const WebSocket = require('ws');
 
 const Base = require('./base');
@@ -23,7 +23,7 @@ class Server extends Base {
     constructor(options = {}) {
         super(Object.assign({ shutdown: 5000 }, options));
         this._services = {};
-        this._registry = registry({
+        this._registry = new ServiceRegistry({
             host: this.options.redis_host || '127.0.0.1',
             port: this.options.redis_port || 6379
         });
@@ -92,7 +92,9 @@ class Server extends Base {
                 });
             });
             for (let service of Object.keys(this._services))
-                this._registry.join(service, { port });
+                this._registry.up(service, port).catch(e => {
+                    if (this.options.debug) console.log(e);
+                });
         }).catch(error => {
             if (is.function(cbErr)) cbErr(error);
         });
@@ -141,8 +143,10 @@ class Server extends Base {
         this._socket.close();
         const services = Object.keys(this._services);
         for (let service of services)
-            this._registry.leave(service, { port: this.options.port });
-        this._registry.quit();
+            this._registry.down(service, this.options.port).catch(e => {
+                if (this.options.debug) console.log(e);
+            });
+        this._registry.stop();
         if (this.options.debug) console.log('server closed');
     }
 }

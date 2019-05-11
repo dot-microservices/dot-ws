@@ -1,7 +1,7 @@
 'use strict';
 
 const is = require('is_js');
-const registry = require('./registry');
+const ServiceRegistry = require('clerq');
 const WebSocket = require('ws');
 
 const Base = require('./base');
@@ -18,7 +18,7 @@ class Client extends Base {
      */
     constructor(options={}) {
         super(options);
-        this._registry = registry({
+        this._registry = new ServiceRegistry({
             host: this.options.redis_host || '127.0.0.1',
             port: this.options.redis_port || 6379
         });
@@ -43,39 +43,44 @@ class Client extends Base {
         else if (!service[1].trim().length || service[1].charAt(0) === '_')
             return cb(new Error('INVALID_METHOD'));
 
-        this._registry.lookup(service[0], function(e, s) {
-            if (s) {
-                let t_o = null, socket = null;
-                try {
-                    if (useTimeout)
-                        t_o = setTimeout(() => {
-                            t_o = undefined;
-                            if (socket) socket.close();
-                            cb(new Error('REQUEST_TIMEOUT'));
-                        }, timeout);
-                    socket = new WebSocket(`ws://${ s.host }`);
-                    socket.on('open', () => socket.send(JSON.stringify({ p: path, d: payload })));
-                    socket.on('message', response => {
-                        socket.close();
-                        if (is.not.undefined(t_o)) {
-                            try {
-                                response = JSON.parse(response);
-                            } catch (e) {
-                                response = 'INVALID_RESPONSE';
+        this._registry.get(service[0])
+            .then(s => {
+                if (s) {
+                    let t_o = null, socket = null;
+                    try {
+                        if (useTimeout)
+                            t_o = setTimeout(() => {
+                                t_o = undefined;
+                                if (socket) socket.close();
+                                cb(new Error('REQUEST_TIMEOUT'));
+                            }, timeout);
+                        socket = new WebSocket(`ws://${ s }`);
+                        socket.on('open', () => socket.send(JSON.stringify({ p: path, d: payload })));
+                        socket.on('message', response => {
+                            socket.close();
+                            if (is.not.undefined(t_o)) {
+                                try {
+                                    response = JSON.parse(response);
+                                } catch (e) {
+                                    response = is.string(response) && is.not.empty(response) ?
+                                        response.trim() : 'INVALID_RESPONSE';
+                                }
+                                if (t_o) clearTimeout(t_o);
+                                if (is.existy(response) && is.not.string(response)) cb(response);
+                                else cb(is.empty(response) ? new Error('INVALID_RESPONSE') : new Error(response));
                             }
-                            if (t_o) clearTimeout(t_o);
-                            if (is.existy(response) && is.not.string(response)) cb(response);
-                            else cb(is.empty(response) ? new Error('INVALID_RESPONSE') : new Error(response));
-                        }
-                    });
-                } catch(e) {
-                    if (this.options.debug) console.log(e);
-                    if (t_o) clearTimeout();
-                    if (socket) socket.close();
-                    cb(e);
-                }
-            } else cb(new Error('INVALID_SERVICE'));
-        });
+                        });
+                    } catch(e) {
+                        if (this.options.debug) console.log(e);
+                        if (t_o) clearTimeout();
+                        if (socket) socket.close();
+                        cb(e);
+                    }
+                } else cb(new Error('INVALID_SERVICE'));
+            }).catch(e => {
+                if (this.options.debug) console.log(e);
+                cb(new Error('INVALID_SERVICE'));
+            });
     }
 
     /**
@@ -83,7 +88,7 @@ class Client extends Base {
      * @memberof Client
      */
     disconnect() {
-        this._registry.quit();
+        this._registry.stop();
     }
 }
 
