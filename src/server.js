@@ -74,12 +74,14 @@ class Server extends Base {
      * @param {Function} cbErr callback for error only
      * @memberof Server
      */
-    start(cbErr) {
+    start(cbErr) { // ! TODO: make this async just like dot-rest
         portfinder.getPortPromise({
             port: is.number(this.options.port) && this.options.port > 0 ? this.options.port : undefined
         }).then(port => {
             this.options.port = port;
-            this._socket = new WebSocket.Server({ port });
+            const opt = { port };
+            if (this.options.host) opt.host = this.options.host;
+            this._socket = new WebSocket.Server(opt);
             this._socket.on('connection', ws => {
                 ws.on('message', message => {
                     try {
