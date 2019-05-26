@@ -23,6 +23,7 @@ npm test
 
 - **debug       :** Debug mode. It's disabled by default.
 - **delimiter   :** Delimiter between service and method names. It's a single dot(.) by default.
+- **host        :** Binds server instance to this value. It's 0.0.0.0 by default.
 - **port        :** Start point for port range. If you set server instance looks up for its port starting from this number. It's 8000 by default.
 - **redis_host  :** redis hostname
 - **redis_port  :** redis port
