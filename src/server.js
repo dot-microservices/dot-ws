@@ -5,7 +5,6 @@ const is = require('is_js');
 const joinPath = require('path').join;
 const portfinder = require('portfinder');
 const readdir = require('fs').readdirSync;
-const ServiceRegistry = require('clerq');
 const WebSocket = require('ws');
 
 const Base = require('./base');
@@ -23,10 +22,6 @@ class Server extends Base {
     constructor(options = {}) {
         super(Object.assign({ shutdown: 5000 }, options));
         this._services = {};
-        this._registry = new ServiceRegistry({
-            host: this.options.redis_host || '127.0.0.1',
-            port: this.options.redis_port || 6379
-        });
     }
 
     /**
@@ -95,10 +90,11 @@ class Server extends Base {
             });
             for (let service of Object.keys(this._services))
                 this._registry.up(service, port).catch(e => {
-                    if (this.options.debug) console.log(e);
+                    this._logger.error(e, `registry.up(${ service }, ${ port })`);
                 });
-        }).catch(error => {
-            if (is.function(cbErr)) cbErr(error);
+        }).catch(e => {
+            this._logger.error(e, 'port finder on start failed');
+            if (is.function(cbErr)) cbErr(e);
         });
     }
 
@@ -115,7 +111,7 @@ class Server extends Base {
         path = path.split(is.string(delimiter) && is.not.empty(delimiter) ? delimiter : '.');
 
         const service = path.shift(), method = path.shift();
-        if (!this._services.hasOwnProperty(service)) {
+        if (is.not.existy(this._services[service])) {
             switch (service) {
             case this.COMMAND_CLEAN_SHUTDOWN:
                 return this.shutdown();
@@ -124,7 +120,7 @@ class Server extends Base {
             }
         } else if (!method || is.empty(method)) return ws.send('MISSING_METHOD');
         else if (method.charAt(0) === '_') return ws.send('INVALID_METHOD');
-        else if (!this._services[service].hasOwnProperty(method)) return ws.send('INVALID_METHOD');
+        else if (is.not.existy(this._services[service][method])) return ws.send('INVALID_METHOD');
         else if (is.not.function(this._services[service][method])) return ws.send('INVALID_METHOD');
 
         const p = this._services[service][method](payload,
@@ -132,7 +128,7 @@ class Server extends Base {
         if (p instanceof Promise)
             p.then(r => r !== undefined && ws.send(ws.send(is.string(r) ? r : JSON.stringify(r))))
                 .catch(e => {
-                    if (this.options.debug) console.log(e);
+                    this._logger.error(e, `onMessage(${ path }, ${ JSON.stringify(payload) })`);
                     ws.send(e.message);
                 });
     }
@@ -145,11 +141,10 @@ class Server extends Base {
         this._socket.close();
         const services = Object.keys(this._services);
         for (let service of services)
-            this._registry.down(service, this.options.port).catch(e => {
-                if (this.options.debug) console.log(e);
-            });
+            this._registry.down(service, this.options.port).catch(e =>
+                this._logger.error(e, `registry.down(${ service }, ${ this.options.port })`));
         this._registry.stop();
-        if (this.options.debug) console.log('server closed');
+        this._logger.info('Server.shutdown() success');
     }
 }
 

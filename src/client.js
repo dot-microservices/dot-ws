@@ -1,7 +1,6 @@
 'use strict';
 
 const is = require('is_js');
-const ServiceRegistry = require('clerq');
 const WebSocket = require('ws');
 
 const Base = require('./base');
@@ -18,10 +17,6 @@ class Client extends Base {
      */
     constructor(options={}) {
         super(options);
-        this._registry = new ServiceRegistry({
-            host: this.options.redis_host || '127.0.0.1',
-            port: this.options.redis_port || 6379
-        });
     }
 
     /**
@@ -66,19 +61,25 @@ class Client extends Base {
                                         response.trim() : 'INVALID_RESPONSE';
                                 }
                                 if (t_o) clearTimeout(t_o);
-                                if (is.existy(response) && is.not.string(response)) cb(response);
-                                else cb(is.empty(response) ? new Error('INVALID_RESPONSE') : new Error(response));
+                                if (is.existy(response) && is.not.string(response)) {
+                                    this._logger.info({ path, payload, response }, 'success');
+                                    cb(response);
+                                } else {
+                                    const res = is.empty(response) ? new Error('INVALID_RESPONSE') : new Error(response);
+                                    this._logger.error(res, `send(${ path }, ${ JSON.stringify(payload) })`);
+                                    cb(res);
+                                }
                             }
                         });
                     } catch(e) {
-                        if (this.options.debug) console.log(e);
                         if (t_o) clearTimeout();
                         if (socket) socket.close();
+                        this._logger.error(e, `send(${ path }, ${ JSON.stringify(payload) })`);
                         cb(e);
                     }
                 } else cb(new Error('INVALID_SERVICE'));
             }).catch(e => {
-                if (this.options.debug) console.log(e);
+                this._logger.error(e, `send(${ path }, ${ JSON.stringify(payload) })`);
                 cb(new Error('INVALID_SERVICE'));
             });
     }
@@ -89,6 +90,7 @@ class Client extends Base {
      */
     disconnect() {
         this._registry.stop();
+        this._logger.info('Client.disconnect() success');
     }
 }
 
