@@ -15,9 +15,9 @@ class TestService {
     }
 }
 
-const server = new Server({});
+const server = new Server({ pino: { level: 'debug' } });
 server.start();
-const client = new Client({});
+const client = new Client({ pino: { level: 'debug' } });
 server.addService(TestService);
 
 test('service health', async done => {
