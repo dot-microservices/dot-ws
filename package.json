@@ -1,6 +1,6 @@
 {
   "name": "dot-ws",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "a minimalist toolkit for building fast, scalable and fault tolerant microservices",
   "keywords": [
     "microservice",
@@ -33,11 +33,11 @@
     "clerq": "^0.2.3",
     "is_js": "^0.9.0",
     "pino": "^5.13.2",
-    "portfinder": "^1.0.21",
+    "portfinder": "^1.0.23",
     "ws": "^7.1.2"
   },
   "devDependencies": {
-    "eslint": "^6.1.0",
+    "eslint": "^6.2.2",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.18.2",
     "jest": "^24.9.0"
