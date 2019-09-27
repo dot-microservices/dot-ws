@@ -2,7 +2,9 @@
 
 'use strict';
 
+const Clerq = require('clerq');
 const Client = require('../src/client');
+const redis = require('redis-mock');
 const Server = require('../src/server');
 
 class TestService {
@@ -15,9 +17,10 @@ class TestService {
     }
 }
 
-const server = new Server({ pino: { level: 'debug' } });
+const registry = new Clerq(redis.createClient(), { expire: 5, pino: { level: 'debug' } });
+const server = new Server(registry, { pino: { level: 'debug' } });
 server.start();
-const client = new Client({ pino: { level: 'debug' } });
+const client = new Client(registry, { pino: { level: 'debug' } });
 server.addService(TestService);
 
 test('service health', async done => {
