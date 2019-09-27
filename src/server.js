@@ -16,11 +16,12 @@ const Base = require('./base');
 class Server extends Base {
     /**
      *Creates an instance of Server.
+     * @param {Object} clerq Clerq instance
      * @param {Object} [options={}]
      * @memberof Server
      */
-    constructor(options = {}) {
-        super(Object.assign({ shutdown: 5000 }, options));
+    constructor(clerq, options = {}) {
+        super(clerq, Object.assign({ shutdown: 5000 }, options));
         this._services = {};
     }
 
@@ -126,7 +127,7 @@ class Server extends Base {
         const p = this._services[service][method](payload,
             r => ws.send(is.string(r) ? r : JSON.stringify(r)));
         if (p instanceof Promise)
-            p.then(r => r !== undefined && ws.send(ws.send(is.string(r) ? r : JSON.stringify(r))))
+            p.then(r => r !== undefined && ws.send(is.string(r) ? r : JSON.stringify(r)))
                 .catch(e => {
                     this._logger.error(e, `onMessage(${ path }, ${ JSON.stringify(payload) })`);
                     ws.send(e.message);
