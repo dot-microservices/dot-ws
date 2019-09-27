@@ -19,17 +19,9 @@ npm test
 
 ## Configuration
 
-- **cache       :** expiration value in milliseconds for service caching. it's disabled by default.
-- **delimiter   :** delimiter between prefix and service name.
-- **expire      :** expire for service registry records. it's disabled by default.
 - **host        :** binds server instance to this value. it's 0.0.0.0 by default.
-- **iface       :** optional. name of the network interface to get outer ip from
 - **pino        :** options for pino logger. it's { "level": "error" } by default.
 - **port        :** start point for port assignment. it's 8000 by default.
-- **prefix      :** prefix for service names
-- **redis       :** options for redis instance ( please see <https://www.npmjs.com/package/redis> )
-- **redis_host  :** redis hostname
-- **redis_port  :** redis port
 - **timeout     :** request timeout.
                     socket communication has auto recovery feature but in some cases you might want to have a timeout option.
 
@@ -52,7 +44,9 @@ You can configure that by *delimeter* parameter.
 ### Example Server
 
 ```js
+const Clerq = require('clerq');
 const Server = require('dot-ws').Server;
+const IORedis = require('ioredis');
 
 class SampleService {
     static test(request, reply) {
@@ -65,7 +59,8 @@ class SampleService {
     }
 }
 
-const server = new Server();
+const registry = new Clerq(new IORedis(), { expire: 5, pino: { level: 'error' } });
+const server = new Server(registry);
 server.addService(SampleService);
 server.start();
 ```
@@ -73,9 +68,12 @@ server.start();
 ### Example Client
 
 ```js
+const Clerq = require('clerq');
 const Client = require('dot-ws').Client;
+const IORedis = require('ioredis');
 
-const client = new Client();
+const registry = new Clerq(new IORedis(), { expire: 5, pino: { level: 'error' } });
+const client = new Client(registry);
 client.send('sampleService.test', request, response => {
     console.log(response);
 });
