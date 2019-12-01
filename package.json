@@ -1,6 +1,6 @@
 {
   "name": "dot-ws",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "a minimalist toolkit for building fast, scalable and fault tolerant microservices",
   "keywords": [
     "microservice",
@@ -20,13 +20,13 @@
   "engines": {
     "node": ">=v6.14.4"
   },
-  "homepage": "https://github.com/Dvs-Bilisim/dot-ws",
+  "homepage": "https://github.com/dot-microservices/dot-ws",
   "bugs": {
-    "url": "https://github.com/Dvs-Bilisim/dot-ws/issues"
+    "url": "https://github.com/dot-microservices/dot-ws/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Dvs-Bilisim/dot-ws.git"
+    "url": "git://github.com/dot-microservices/dot-ws.git"
   },
   "license": "MIT",
   "dependencies": {
